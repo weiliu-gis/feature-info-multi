@@ -1,0 +1,18 @@
+{
+  "name": "feature-info-multi",
+  "label": "Feature Info Multi",
+  "type": "widget",
+  "version": "1.0.0",
+  "exbVersion": "1.21.0",
+  "author": "Wei Liu",
+  "description": "Displays information for multiple identified features.",
+  "copyright": "",
+  "license": "",
+  "properties": {},
+  "dependency": ["jimu-arcgis"],
+  "translatedLocales": ["en"],
+  "defaultSize": {
+    "width": 400,
+    "height": 300
+  }
+}
