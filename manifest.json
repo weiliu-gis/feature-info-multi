@@ -5,14 +5,21 @@
   "version": "1.0.0",
   "exbVersion": "1.21.0",
   "author": "Wei Liu",
-  "description": "Displays information for multiple identified features.",
+  "description": "Displays information for multiple features returned from map clicks and search results.",
   "copyright": "",
   "license": "",
-  "properties": {},
   "dependency": ["jimu-arcgis"],
   "translatedLocales": ["en"],
   "defaultSize": {
     "width": 400,
     "height": 300
-  }
+  },
+  "messageActions": [
+    {
+      "name": "search-result",
+      "label": "Search result",
+      "uri": "actions/search-result-action",
+      "settingUri": "actions/search-result-action-setting"
+    }
+  ]
 }
