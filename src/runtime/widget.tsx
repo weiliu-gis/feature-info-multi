@@ -16,6 +16,9 @@ const Widget = (props: AllWidgetProps<any>) => {
   const [selectedGraphic, setSelectedGraphic] = useState<any>(null)
   const [selectionEnabled, setSelectionEnabled] = useState(false)
 
+  const searchResultUsesInteriorPoint =
+    props.mutableStateProps?.searchResultUsesInteriorPoint
+
   // Show the map-click or search-result point
   const showFeaturePoint = (point: any) => {
     if (!markerLayer || !point) {
@@ -61,6 +64,8 @@ const Widget = (props: AllWidgetProps<any>) => {
         graphics.push(graphic)
       }
 
+      selectionLayer?.removeAll()
+      setSelectedGraphic(null)
       setPopupFeatures(graphics)
     } catch (error) {
       console.error("Fetch popup features error:", error)
@@ -101,9 +106,34 @@ const Widget = (props: AllWidgetProps<any>) => {
     return () => {
       jimuMapView.view.map.remove(marker)
       jimuMapView.view.map.remove(selection)
+    }
+  }, [jimuMapView])
 
-      setMarkerLayer(undefined)
-      setSelectionLayer(undefined)
+  // Hide Experience Builder's default feature highlight
+  useEffect(() => {
+    if (!jimuMapView?.view) {
+      return
+    }
+
+    const view = jimuMapView.view
+
+    const defaultHighlight = view.highlights.find(
+      (highlight: any) => highlight.name === "default",
+    )
+
+    if (!defaultHighlight) {
+      return
+    }
+
+    const originalHaloOpacity = defaultHighlight.haloOpacity
+    const originalFillOpacity = defaultHighlight.fillOpacity
+
+    defaultHighlight.haloOpacity = 0
+    defaultHighlight.fillOpacity = 0
+
+    return () => {
+      defaultHighlight.haloOpacity = originalHaloOpacity
+      defaultHighlight.fillOpacity = originalFillOpacity
     }
   }, [jimuMapView])
 
@@ -138,7 +168,7 @@ const Widget = (props: AllWidgetProps<any>) => {
           color: [0, 255, 255, 0.15],
           outline: {
             color: [0, 255, 255, 1],
-            width: 3,
+            width: 2,
           },
         } as any
       }
@@ -147,7 +177,7 @@ const Widget = (props: AllWidgetProps<any>) => {
         selectionGraphic.symbol = {
           type: "simple-line",
           color: [0, 255, 255, 1],
-          width: 5,
+          width: 4,
         } as any
       }
 
@@ -158,7 +188,7 @@ const Widget = (props: AllWidgetProps<any>) => {
           size: 16,
           outline: {
             color: [0, 255, 255, 1],
-            width: 3,
+            width: 2,
           },
         } as any
       }
@@ -170,13 +200,27 @@ const Widget = (props: AllWidgetProps<any>) => {
     }
   }
 
-  // Clear feature results, selection, and map pin
+  // Clear feature results, selection, map pin, and search notice
   const clearFeatureResults = () => {
     setPopupFeatures([])
     setSelectedGraphic(null)
 
     selectionLayer?.removeAll()
     markerLayer?.removeAll()
+
+    const mutableStore = MutableStoreManager.getInstance()
+
+    mutableStore.updateStateValue(
+      props.id,
+      "searchPoint",
+      null,
+    )
+
+    mutableStore.updateStateValue(
+      props.id,
+      "searchResultUsesInteriorPoint",
+      false,
+    )
   }
 
   // Enable or disable feature selection
@@ -201,10 +245,18 @@ const Widget = (props: AllWidgetProps<any>) => {
     const handle = view.on("click", async (event: any) => {
       showFeaturePoint(event.mapPoint)
 
-      MutableStoreManager.getInstance().updateStateValue(
+      const mutableStore = MutableStoreManager.getInstance()
+
+      mutableStore.updateStateValue(
         props.id,
         "searchPoint",
         null,
+      )
+
+      mutableStore.updateStateValue(
+        props.id,
+        "searchResultUsesInteriorPoint",
+        false,
       )
 
       const mapComponent = jimuMapView.mapComponent
@@ -213,9 +265,18 @@ const Widget = (props: AllWidgetProps<any>) => {
         return
       }
 
+      const CLICK_BUFFER = 7
+
+      const hitTarget = {
+        x: event.screenPoint.x - CLICK_BUFFER,
+        y: event.screenPoint.y - CLICK_BUFFER,
+        width: CLICK_BUFFER * 2,
+        height: CLICK_BUFFER * 2,
+    }
+
       await fetchPopupFeatures(
         mapComponent,
-        event.screenPoint,
+        hitTarget,
         event.pointerType,
       )
     })
@@ -296,6 +357,7 @@ const Widget = (props: AllWidgetProps<any>) => {
           heading="Feature Information"
         >
           <calcite-block
+            label="Feature results summary"
             expanded
             style={{
               backgroundColor: "#dddddd50",
@@ -372,6 +434,23 @@ const Widget = (props: AllWidgetProps<any>) => {
                 </div>
               )}
             </div>
+
+            {searchResultUsesInteriorPoint && (
+              <calcite-notice
+                open
+                closable
+                kind="info"
+                icon="information"
+                scale="s"
+              >
+                <div slot="title">
+                  Search Location
+                </div>
+                <div slot="message">
+                  The map pin marks the point used to retrieve the results shown below.
+                </div>
+              </calcite-notice>
+            )}
           </calcite-block>
 
           <div>
@@ -392,11 +471,11 @@ const Widget = (props: AllWidgetProps<any>) => {
                         ? "#b3cbff"
                         : "transparent",
                     transition: "background-color 0s ease",
-                    cursor: selectionEnabled ? "pointer" : "default",
+                    cursor: selectionEnabled ? "pointer" : "default"
                   }}
                   onClick={() => handleBlockClick(graphic)}
                 >
-                  <arcgis-feature graphic={graphic}></arcgis-feature>
+                  <arcgis-feature style={{whiteSpace: "pre-wrap"}} graphic={graphic}></arcgis-feature>
                 </calcite-block>
               )
             })}

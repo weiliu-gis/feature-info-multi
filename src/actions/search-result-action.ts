@@ -49,19 +49,30 @@ export default class SearchResultAction extends AbstractMessageAction {
     }
 
     let searchPoint
+    let searchResultUsesInteriorPoint = false
 
-    // Convert parcel polygons to an interior point
+    // Convert polygon search results to an interior point
     if (geometry.type === "polygon") {
       searchPoint = labelPointOperator.execute(geometry)
+      searchResultUsesInteriorPoint = true
     }
 
-    // Locator results are already points
+    // Point search results can be used directly
     if (geometry.type === "point") {
       searchPoint = geometry
+      searchResultUsesInteriorPoint = false
     }
 
     if (searchPoint) {
-      MutableStoreManager.getInstance().updateStateValue(
+      const mutableStore = MutableStoreManager.getInstance()
+
+      mutableStore.updateStateValue(
+        this.widgetId,
+        "searchResultUsesInteriorPoint",
+        searchResultUsesInteriorPoint,
+      )
+
+      mutableStore.updateStateValue(
         this.widgetId,
         "searchPoint",
         searchPoint,
