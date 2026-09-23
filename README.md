@@ -2,7 +2,7 @@
 
 **Feature Info Multi** is a custom widget for **ArcGIS Experience Builder Developer Edition 1.21**. It displays information for multiple features found through map clicks or Search widget results, organizes them by layer(group), and provides controls for navigating and highlighting features.
 
-![Feature Info Multi Interface](screenshot.png)
+![Feature Info Multi Interface](https://github.com/weiliu-gis/feature-info-multi/blob/main/Screenshot.png?raw=true)
 
 _Note: The screenshot is for demonstration purposes only. The widget's appearance and displayed information may vary depending on the application configuration and map data._
 
