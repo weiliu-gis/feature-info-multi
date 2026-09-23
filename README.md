@@ -2,6 +2,10 @@
 
 **Feature Info Multi** is a custom widget for **ArcGIS Experience Builder Developer Edition 1.21**. It displays information for multiple features found through map clicks or Search widget results, organizes them by layer(group), and provides controls for navigating and highlighting features.
 
+![Feature Info Multi Interface](screenshot.png)
+
+_Note: The screenshot is for demonstration purposes only. The widget's appearance and displayed information may vary depending on the application configuration and map data._
+
 ## Features
 
 - **Identify multiple features:** Click the connected map to retrieve popup information from supported, visible, popup-enabled layers. A red pin marks the selected location.
@@ -62,8 +66,8 @@ The **Search result** action requires no additional configuration. Map-click ide
 | Click the map                  | Shows popup information for features found near the clicked location.        |
 | Select a Search result         | Shows feature information at the selected point or polygon's interior point. |
 | Expand/Collapse All            | Opens or closes all result groups.                                           |
-| Group heading                  | Expands or collapses an individual group.                                    |
-| Enable selection               | Allows feature blocks to be clicked for zooming and cyan highlighting.       |
+| Block section heading          | Expands or collapses an individual group.                                    |
+| Enable selection               | Allows feature blocks to be clicked for zooming and highlighting.            |
 | Click a selected feature again | Removes its highlight.                                                       |
 | Disable selection              | Turns off feature-block selection and clears the current highlight.          |
 | Delete all results             | Clears the results, map pin, highlight, and search-location notice.          |
@@ -80,7 +84,7 @@ The header controls appear when at least one feature is found. Selection is disa
 
 ## Deployment
 
-To test the widget in a deployed application, publish and download the **entire Experience Builder experience**. Extract it and copy the application files to your web server. The custom widget is included in the downloaded experience.
+To test the widget in an application, publish and download the **entire** Experience Builder application. Extract it and copy the application files to your web server(folder). The custom widget is included in the downloaded experience.
 
 If your experience uses private ArcGIS content, register the deployed application and configure its client ID according to Esri's Experience Builder deployment instructions. Users still need permission to access secured maps and services.
 
@@ -89,3 +93,5 @@ If your experience uses private ArcGIS content, register the deployed applicatio
 - [ArcGIS Experience Builder: Custom widget development](https://developers.arcgis.com/experience-builder/guide/getting-started-widget/)
 - [ArcGIS Experience Builder: Actions](https://developers.arcgis.com/experience-builder/guide/action-triggers/)
 - [ArcGIS Experience Builder: Deployment](https://developers.arcgis.com/experience-builder/guide/experience-deployment/)
+- [Calcite Design System](https://developers.arcgis.com/calcite-design-system/)
+- [ArcGIS Maps SDK for JavaScript](https://developers.arcgis.com/javascript/latest/)
