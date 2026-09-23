@@ -15,15 +15,17 @@ const Widget = (props: AllWidgetProps<any>) => {
   const [popupFeatures, setPopupFeatures] = useState<any[]>([])
   const [selectedGraphic, setSelectedGraphic] = useState<any>(null)
   const [selectionEnabled, setSelectionEnabled] = useState(false)
+  const [expandedSections, setExpandedSections] = useState<{
+    [key: string]: boolean
+  }>({})
 
+  const searchPoint = props.mutableStateProps?.searchPoint
   const searchResultUsesInteriorPoint =
     props.mutableStateProps?.searchResultUsesInteriorPoint
 
   // Show the map-click or search-result point
   const showFeaturePoint = (point: any) => {
-    if (!markerLayer || !point) {
-      return
-    }
+    if (!markerLayer || !point) return
 
     markerLayer.removeAll()
 
@@ -46,16 +48,12 @@ const Widget = (props: AllWidgetProps<any>) => {
     screenPoint: any,
     pointerType: any = "mouse",
   ) => {
-    if (!mapComponent || !screenPoint) {
-      return
-    }
+    if (!mapComponent || !screenPoint) return
 
     try {
       const graphicGenerator = await mapComponent.fetchPopupFeatures(
         screenPoint,
-        {
-          pointerType,
-        },
+        { pointerType },
       )
 
       const graphics: any[] = []
@@ -74,16 +72,14 @@ const Widget = (props: AllWidgetProps<any>) => {
 
   // Handle active map view
   const activeViewChangeHandler = (jmv: JimuMapView) => {
-    if (jmv) {
-      setJimuMapView(jmv)
-    }
+    if (jmv) setJimuMapView(jmv)
   }
 
   // Create marker and selection graphics layers
   useEffect(() => {
-    if (!jimuMapView?.view) {
-      return
-    }
+    if (!jimuMapView?.view) return
+
+    const view = jimuMapView.view
 
     const marker = new GraphicsLayer({
       id: "feature-info-multi-marker",
@@ -97,33 +93,27 @@ const Widget = (props: AllWidgetProps<any>) => {
       listMode: "hide",
     })
 
-    jimuMapView.view.map.add(marker)
-    jimuMapView.view.map.add(selection)
+    view.map.add(marker)
+    view.map.add(selection)
 
     setMarkerLayer(marker)
     setSelectionLayer(selection)
 
     return () => {
-      jimuMapView.view.map.remove(marker)
-      jimuMapView.view.map.remove(selection)
+      view.map.remove(marker)
+      view.map.remove(selection)
     }
   }, [jimuMapView])
 
   // Hide Experience Builder's default feature highlight
   useEffect(() => {
-    if (!jimuMapView?.view) {
-      return
-    }
+    if (!jimuMapView?.view) return
 
-    const view = jimuMapView.view
-
-    const defaultHighlight = view.highlights.find(
+    const defaultHighlight = jimuMapView.view.highlights.find(
       (highlight: any) => highlight.name === "default",
     )
 
-    if (!defaultHighlight) {
-      return
-    }
+    if (!defaultHighlight) return
 
     const originalHaloOpacity = defaultHighlight.haloOpacity
     const originalFillOpacity = defaultHighlight.fillOpacity
@@ -139,13 +129,8 @@ const Widget = (props: AllWidgetProps<any>) => {
 
   // Select, zoom to, and highlight a feature
   const handleBlockClick = async (graphic: any) => {
-    if (!selectionEnabled) {
-      return
-    }
-
-    if (!jimuMapView?.view || !selectionLayer || !graphic?.geometry) {
-      return
-    }
+    if (!selectionEnabled) return
+    if (!jimuMapView?.view || !selectionLayer || !graphic?.geometry) return
 
     if (selectedGraphic === graphic) {
       selectionLayer.removeAll()
@@ -210,12 +195,7 @@ const Widget = (props: AllWidgetProps<any>) => {
 
     const mutableStore = MutableStoreManager.getInstance()
 
-    mutableStore.updateStateValue(
-      props.id,
-      "searchPoint",
-      null,
-    )
-
+    mutableStore.updateStateValue(props.id, "searchPoint", null)
     mutableStore.updateStateValue(
       props.id,
       "searchResultUsesInteriorPoint",
@@ -236,9 +216,7 @@ const Widget = (props: AllWidgetProps<any>) => {
 
   // Fetch popup features from map clicks
   useEffect(() => {
-    if (!jimuMapView?.view) {
-      return
-    }
+    if (!jimuMapView?.view) return
 
     const view = jimuMapView.view
 
@@ -247,12 +225,7 @@ const Widget = (props: AllWidgetProps<any>) => {
 
       const mutableStore = MutableStoreManager.getInstance()
 
-      mutableStore.updateStateValue(
-        props.id,
-        "searchPoint",
-        null,
-      )
-
+      mutableStore.updateStateValue(props.id, "searchPoint", null)
       mutableStore.updateStateValue(
         props.id,
         "searchResultUsesInteriorPoint",
@@ -261,18 +234,16 @@ const Widget = (props: AllWidgetProps<any>) => {
 
       const mapComponent = jimuMapView.mapComponent
 
-      if (!mapComponent) {
-        return
-      }
+      if (!mapComponent) return
 
-      const CLICK_BUFFER = 7
+      const CLICK_BUFFER = 8
 
       const hitTarget = {
         x: event.screenPoint.x - CLICK_BUFFER,
         y: event.screenPoint.y - CLICK_BUFFER,
         width: CLICK_BUFFER * 2,
         height: CLICK_BUFFER * 2,
-    }
+      }
 
       await fetchPopupFeatures(
         mapComponent,
@@ -288,19 +259,13 @@ const Widget = (props: AllWidgetProps<any>) => {
 
   // Fetch popup features from Search widget results
   useEffect(() => {
-    const searchPoint = props.mutableStateProps?.searchPoint
-
-    if (!jimuMapView?.view || !searchPoint) {
-      return
-    }
+    if (!jimuMapView?.view || !searchPoint) return
 
     const fetchFeaturesFromSearch = async () => {
       const view = jimuMapView.view
       const mapComponent = jimuMapView.mapComponent
 
-      if (!mapComponent) {
-        return
-      }
+      if (!mapComponent) return
 
       try {
         showFeaturePoint(searchPoint)
@@ -316,9 +281,7 @@ const Widget = (props: AllWidgetProps<any>) => {
 
         const screenPoint = view.toScreen(searchPoint)
 
-        if (!screenPoint) {
-          return
-        }
+        if (!screenPoint) return
 
         await fetchPopupFeatures(
           mapComponent,
@@ -331,16 +294,103 @@ const Widget = (props: AllWidgetProps<any>) => {
     }
 
     fetchFeaturesFromSearch()
-  }, [
-    jimuMapView,
-    markerLayer,
-    props.mutableStateProps?.searchPoint,
-  ])
+  }, [jimuMapView, markerLayer, searchPoint])
+
+  // Group popup features by their highest-level layer or group
+  const groupPopupFeatures = (graphics: any[]) => {
+    const groups: { [key: string]: any[] } = {}
+
+    graphics.forEach((graphic) => {
+      const leafLayer = graphic.sourceLayer || graphic.layer
+
+      if (!leafLayer) return
+
+      let topLayer = leafLayer
+
+      while (topLayer.parent?.title) {
+        topLayer = topLayer.parent
+      }
+
+      const groupTitle =
+        topLayer.title || leafLayer.title || "Other"
+
+      if (!groups[groupTitle]) {
+        groups[groupTitle] = []
+      }
+
+      groups[groupTitle].push(graphic)
+    })
+
+    return groups
+  }
+
+  const groupedPopupFeatures = groupPopupFeatures(popupFeatures)
+
+  // Check whether all sections are expanded
+  const allSectionsExpanded = Object.keys(groupedPopupFeatures).every(
+    (title) => expandedSections[title] ?? true,
+  )
+
+  // Expand or collapse all sections
+  const toggleAllSections = () => {
+    const groupTitles = Object.keys(groupedPopupFeatures)
+    const nextState: { [key: string]: boolean } = {}
+
+    groupTitles.forEach((title) => {
+      nextState[title] = !allSectionsExpanded
+    })
+
+    setExpandedSections(nextState)
+  }
+
+  // Add horizontal padding to section headers
+  const styleSectionHeader = async (section: any) => {
+    if (!section) return
+
+    await section.componentOnReady()
+
+    const shadowRoot = section.shadowRoot
+
+    if (!shadowRoot || shadowRoot.querySelector("#section-header-style")) {
+      return
+    }
+
+    const style = document.createElement("style")
+
+    style.id = "section-header-style"
+    style.textContent = `
+      .toggle {
+        padding-inline: 12px !important;
+      }
+    `
+
+    shadowRoot.appendChild(style)
+  }
+
+  // Update an individual section's expansion state
+  const updateSectionExpansion = (
+    groupTitle: string,
+    expanded: boolean,
+  ) => {
+    setExpandedSections((previous) => ({
+      ...previous,
+      [groupTitle]: expanded,
+    }))
+  }
+
+  // Panel action labels
+  const toggleAllLabel = allSectionsExpanded
+    ? "Collapse all sections"
+    : "Expand all sections"
+
+  const selectionLabel = selectionEnabled
+    ? "Clear all highlights and disable selection"
+    : "Enable selection"
 
   // UI
   return (
     <div className="jimu-widget">
-      {props.useMapWidgetIds && props.useMapWidgetIds.length === 1 && (
+      {props.useMapWidgetIds?.length === 1 && (
         <JimuMapViewComponent
           useMapWidgetId={props.useMapWidgetIds[0]}
           onActiveViewChange={activeViewChangeHandler}
@@ -349,137 +399,198 @@ const Widget = (props: AllWidgetProps<any>) => {
 
       {jimuMapView?.view && (
         <calcite-panel
+          heading="Feature Information"
           style={
             {
               "--calcite-panel-background-color": "#ffffff",
             } as React.CSSProperties
           }
-          heading="Feature Information"
         >
-          <calcite-block
-            label="Feature results summary"
-            expanded
-            style={{
-              backgroundColor: "#dddddd50",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                width: "100%",
-              }}
-            >
-              <span>
+          {popupFeatures.length > 0 && (
+            <>
+              <span slot="description" style={{ fontSize: "12px" }}>
                 Number of Features Found: {popupFeatures.length}
               </span>
 
-              {popupFeatures.length > 0 && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                  }}
+              <div
+                slot="header-actions-end"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "2px",
+                }}
+              >
+                {/* Expand or collapse all sections */}
+                <calcite-action
+                  id="toggle-all-sections"
+                  icon={
+                    allSectionsExpanded
+                      ? "chevrons-up"
+                      : "chevrons-down"
+                  }
+                  text={toggleAllLabel}
+                  style={
+                    {
+                      "--calcite-color-focus": "transparent",
+                    } as React.CSSProperties
+                  }
+                  onClick={toggleAllSections}
+                />
+
+                <calcite-tooltip
+                  close-on-click
+                  reference-element="toggle-all-sections"
+                  placement="bottom"
                 >
-                  <calcite-action
-                    id="selection-action-switch"
-                    icon="enable-disable-feature-selection"
-                    style={
-                      {
-                        "--calcite-action-text-color": "#000000",
-                        "--calcite-action-background-color": selectionEnabled
-                          ? "#97d1bbe8"
-                          : "rgba(0, 0, 0, 0)",
-                      } as React.CSSProperties
-                    }
-                    text={
-                      selectionEnabled
-                        ? "Clear all highlights and disable selection"
-                        : "Enable selection"
-                    }
-                    onClick={toggleSelection}
-                  />
+                  {toggleAllLabel}
+                </calcite-tooltip>
 
-                  <calcite-tooltip
-                    close-on-click
-                    reference-element="selection-action-switch"
-                    placement="bottom"
-                  >
-                    {selectionEnabled
-                      ? "Clear all highlights and disable selection"
-                      : "Enable selection"}
-                  </calcite-tooltip>
+                {/* Toggle feature selection */}
+                <calcite-action
+                  id="selection-action-switch"
+                  icon="enable-disable-feature-selection"
+                  text={selectionLabel}
+                  style={
+                    {
+                      "--calcite-color-focus": "transparent",
+                      "--calcite-action-background-color": selectionEnabled
+                        ? "#97d1bbe8"
+                        : "transparent",
+                    } as React.CSSProperties
+                  }
+                  onClick={toggleSelection}
+                />
 
-                  <calcite-action
-                    id="clear-results-action"
-                    icon="trash"
-                    style={
-                      {
-                        "--calcite-action-text-color": "#000000",
-                      } as React.CSSProperties
-                    }
-                    text="Delete all results"
-                    onClick={clearFeatureResults}
-                  />
+                <calcite-tooltip
+                  close-on-click
+                  reference-element="selection-action-switch"
+                  placement="bottom"
+                >
+                  {selectionLabel}
+                </calcite-tooltip>
 
-                  <calcite-tooltip
-                    close-on-click
-                    reference-element="clear-results-action"
-                    placement="bottom"
-                  >
-                    Delete all results
-                  </calcite-tooltip>
-                </div>
-              )}
-            </div>
+                {/* Clear feature results */}
+                <calcite-action
+                  id="clear-results-action"
+                  icon="trash"
+                  text="Delete all results"
+                  onClick={clearFeatureResults}
+                />
 
-            {searchResultUsesInteriorPoint && (
+                <calcite-tooltip
+                  close-on-click
+                  reference-element="clear-results-action"
+                  placement="bottom"
+                >
+                  Delete all results
+                </calcite-tooltip>
+              </div>
+            </>
+          )}
+
+          {/* Search location notice */}
+          {searchResultUsesInteriorPoint && (
+            <calcite-block
+              label="Search Location Notice"
+              expanded
+              style={
+                {
+                  backgroundColor: "transparent",
+                  "--calcite-block-border-color": "transparent",
+                } as React.CSSProperties
+              }
+            >
               <calcite-notice
                 open
                 closable
                 kind="info"
                 icon="information"
                 scale="s"
+                style={
+                  {
+                    "--calcite-notice-corner-radius": "7px",
+                  } as React.CSSProperties
+                }
               >
-                <div slot="title">
-                  Search Location
-                </div>
+                <div slot="title">Search Location</div>
+
                 <div slot="message">
-                  The map pin marks the point used to retrieve the results shown below.
+                  The map pin marks the point used to retrieve the results
+                  shown below.
                 </div>
               </calcite-notice>
-            )}
-          </calcite-block>
+            </calcite-block>
+          )}
 
-          <div>
-            {popupFeatures.map((graphic, index) => {
-              const title =
-                graphic.layer?.title ||
-                graphic.sourceLayer?.title ||
-                "Feature"
+          {/* Grouped feature results */}
+          {popupFeatures.length > 0 && (
+            <div>
+              {Object.entries(groupedPopupFeatures).map(
+                ([groupTitle, graphics]) => (
+                  <calcite-block-section
+                    key={groupTitle}
+                    ref={(section) => {
+                      if (section) {
+                        void styleSectionHeader(section)
+                      }
+                    }}
+                    text={groupTitle}
+                    expanded={expandedSections[groupTitle] ?? true}
+                    oncalciteBlockSectionExpand={() => {
+                      updateSectionExpansion(groupTitle, true)
+                    }}
+                    oncalciteBlockSectionCollapse={() => {
+                      updateSectionExpansion(groupTitle, false)
+                    }}
+                    style={
+                      {
+                        "--calcite-block-section-content-space": "0px",
+                        "--calcite-block-section-border-color": "transparent",
+                        "--calcite-color-focus": "transparent",
+                        "--calcite-block-section-background-color":
+                          "#dfdedead",
+                      } as React.CSSProperties
+                    }
+                  >
+                    {graphics.map((graphic, index) => {
+                      const leafTitle =
+                        graphic.sourceLayer?.title ||
+                        graphic.layer?.title ||
+                        "Feature"
 
-              return (
-                <calcite-block
-                  key={index}
-                  label={title}
-                  expanded
-                  style={{
-                    backgroundColor:
-                      selectedGraphic === graphic
-                        ? "#b3cbff"
-                        : "transparent",
-                    transition: "background-color 0s ease",
-                    cursor: selectionEnabled ? "pointer" : "default"
-                  }}
-                  onClick={() => handleBlockClick(graphic)}
-                >
-                  <arcgis-feature style={{whiteSpace: "pre-wrap"}} graphic={graphic}></arcgis-feature>
-                </calcite-block>
-              )
-            })}
-          </div>
+                      return (
+                        <calcite-block
+                          key={`${groupTitle}-${leafTitle}-${index}`}
+                          label={leafTitle}
+                          expanded
+                          style={
+                            {
+                              "--calcite-block-border-color": "transparent",
+                              "--calcite-block-content-space": "5px",
+                              backgroundColor:
+                                selectedGraphic === graphic
+                                  ? "#8baffd"
+                                  : "transparent",
+                              transition: "background-color 0s ease",
+                              cursor: selectionEnabled
+                                ? "pointer"
+                                : "default",
+                            } as React.CSSProperties
+                          }
+                          onClick={() => handleBlockClick(graphic)}
+                        >
+                          <arcgis-feature
+                            graphic={graphic}
+                            style={{ whiteSpace: "pre-wrap" }}
+                          ></arcgis-feature>
+                        </calcite-block>
+                      )
+                    })}
+                  </calcite-block-section>
+                ),
+              )}
+            </div>
+          )}
         </calcite-panel>
       )}
     </div>

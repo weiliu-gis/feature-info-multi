@@ -4,6 +4,7 @@
   "type": "widget",
   "version": "1.0.0",
   "exbVersion": "1.21.0",
+  "lastUpdated": "2026-09-22",
   "author": "Wei Liu",
   "description": "Displays information for multiple features returned from map clicks and search results.",
   "copyright": "",
