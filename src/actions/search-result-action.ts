@@ -51,9 +51,12 @@ export default class SearchResultAction extends AbstractMessageAction {
     let searchPoint
     let searchResultUsesInteriorPoint = false
 
+    let searchPolygon = null
+
     // Convert polygon search results to an interior point
     if (geometry.type === "polygon") {
       searchPoint = labelPointOperator.execute(geometry)
+      searchPolygon = geometry
       searchResultUsesInteriorPoint = true
     }
 
@@ -65,6 +68,12 @@ export default class SearchResultAction extends AbstractMessageAction {
 
     if (searchPoint) {
       const mutableStore = MutableStoreManager.getInstance()
+
+      mutableStore.updateStateValue(
+        this.widgetId,
+        "searchPolygon",
+        searchPolygon,
+      )
 
       mutableStore.updateStateValue(
         this.widgetId,
