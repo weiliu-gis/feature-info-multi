@@ -2,7 +2,7 @@
 
 **Feature Info Multi** is a custom widget for **ArcGIS Experience Builder Developer Edition 1.21**. It displays information for multiple features found through map clicks or Search widget results, organizes them by layer(group), and provides controls for navigating and highlighting features.
 
-![Feature Info Multi Interface](https://private-user-images.githubusercontent.com/89955724/671381208-59aad9e0-6aae-4967-a2c5-d57ce32e8e00.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3OTE4MTM2MjgsIm5iZiI6MTc5MTgxMzMyOCwicGF0aCI6Ii84OTk1NTcyNC82NzEzODEyMDgtNTlhYWQ5ZTAtNmFhZS00OTY3LWEyYzUtZDU3Y2UzMmU4ZTAwLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjEwMTIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYxMDEyVDEzNTUyOFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWQxZWRjZTYxZDA5ZWFhMjBiOTAxYjNkODlmNmRmNjgzNzgzYzBmY2Y2MjY5ODFiMTE2M2I2ZjRjYmNkZDEyNzQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.icyHa7UTF92a94c0QZ6HytX3cT_ZT0D0ntLekVwyeyU)
+![Feature Info Multi Interface](https://github.com/user-attachments/assets/59aad9e0-6aae-4967-a2c5-d57ce32e8e00)
 
 _Note: The screenshot is for demonstration purposes only. The widget's appearance and displayed information may vary depending on the application configuration and map data._
 
@@ -11,7 +11,7 @@ _Note: The screenshot is for demonstration purposes only. The widget's appearanc
 - **Identify multiple features:** Click the connected map to retrieve popup information from supported, visible, popup-enabled layers. A red pin marks the selected location.
 - **Search integration:** Use results from Search widget to find and display feature information at the selected location. For lines or polygons, options are provided to use an interior point or a inward-buffered (0.1 feet) polygon created from search results.
 
-  ![Polygon Search Method](https://private-user-images.githubusercontent.com/89955724/671383608-0050a9a8-c06c-4349-8f4a-3e25633747d1.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3OTE4MTM2MjgsIm5iZiI6MTc5MTgxMzMyOCwicGF0aCI6Ii84OTk1NTcyNC82NzEzODM2MDgtMDA1MGE5YTgtYzA2Yy00MzQ5LThmNGEtM2UyNTYzMzc0N2QxLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjEwMTIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYxMDEyVDEzNTUyOFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTQ1NzVkYzQ2ZjY3YjE2NzExNTY0ZTc5NWI0MWVkNmI5ZjU4ZDZkOTc4MjMwZWFhMGM0NjQ2M2MzOWIwZDlhNjkmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.iPAWQFuVDW2Tm6pNEH_nuaaZowQuhDzZWFSl8S4JrdM)
+  ![Polygon Search Method](https://github.com/user-attachments/assets/0050a9a8-c06c-4349-8f4a-3e25633747d1)
 
 - **Grouped results:** Organizes features under their highest-level layer or group name, with individual feature details displayed in the blocks.
 - **Expand and collapse:** Open or close individual result groups, or use the panel action to expand or collapse all groups at once.
