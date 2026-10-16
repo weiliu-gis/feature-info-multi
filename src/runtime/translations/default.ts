@@ -1,4 +1,4 @@
 export default {
-  _widgetLabel: "Feature Info Multi",
-  _action_search-result_label: "Search result"
+  _widgetLabel: "Advanced Feature Info",
+  "_action_unified-selection_label": "Show feature information",
 };

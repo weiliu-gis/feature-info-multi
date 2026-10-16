@@ -1,240 +1,73 @@
 import { React, type AllWidgetProps, MutableStoreManager } from "jimu-core"
 import { JimuMapViewComponent, type JimuMapView } from "jimu-arcgis"
-import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js"
-import * as bufferOperator from "@arcgis/core/geometry/operators/bufferOperator.js"
-import Graphic from "@arcgis/core/Graphic.js"
-import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js"
-import PictureMarkerSymbol from "@arcgis/core/symbols/PictureMarkerSymbol.js"
 
-const { useState, useEffect } = React
+import { processFeatureInput } from "./services/featureInputProcessor"
+import { highlightFeature, showInputGeometries } from "./utils/mapGraphics"
+import { useMapGraphics } from "./hooks/useMapGraphics"
+import { useMapClick } from "./hooks/useMapClick"
+import FeatureResultsPanel from "./components/FeatureResultsPanel"
+import type { UnifiedGeometryInput, WidgetSelectionInput } from "./types"
+
+const { useState, useEffect, useRef } = React
+
+interface ActiveInput {
+  sourceId?: string
+  requestId: number
+}
 
 const Widget = (props: AllWidgetProps<any>) => {
-
-  // Widget state
   const [jimuMapView, setJimuMapView] = useState<JimuMapView>()
-  const [markerLayer, setMarkerLayer] = useState<GraphicsLayer>()
-  const [selectionLayer, setSelectionLayer] = useState<GraphicsLayer>()
+  const { markerLayer, selectionLayer } = useMapGraphics(jimuMapView)
   const [popupFeatures, setPopupFeatures] = useState<any[]>([])
   const [selectedGraphic, setSelectedGraphic] = useState<any>(null)
   const [selectionEnabled, setSelectionEnabled] = useState(false)
-  const [expandedSections, setExpandedSections] = useState<{
-    [key: string]: boolean
-  }>({})
-  const searchPoint = props.mutableStateProps?.searchPoint
-  const searchResultUsesInteriorPoint =
-    props.mutableStateProps?.searchResultUsesInteriorPoint
-  const searchPolygon = props.mutableStateProps?.searchPolygon
-  const polygonSearchMethod =
-    props.config?.polygonSearchMethod ?? "interior-point"
 
-  // Show new results and remove any previous feature highlight
+  const requestSequenceRef = useRef(0)
+  const activeInputRef = useRef<ActiveInput | null>(null)
+  const messageInput = props.mutableStateProps?.widgetInput as
+    | WidgetSelectionInput | null | undefined
+
   const updateFeatureResults = (graphics: any[]) => {
     selectionLayer?.removeAll()
     setSelectedGraphic(null)
     setPopupFeatures(graphics)
   }
 
-  // Clear the previous Search widget selection in mutable state
-  const resetSearchState = () => {
-    const mutableStore = MutableStoreManager.getInstance()
-    mutableStore.updateStateValue(props.id, "searchPolygon", null)
-    mutableStore.updateStateValue(props.id, "searchPoint", null)
-    mutableStore.updateStateValue(
-      props.id,
-      "searchResultUsesInteriorPoint",
-      false,
-    )
+  // Clear only our stored message; we do not reset another widget's UI.
+  const resetMessageInput = () => {
+    MutableStoreManager.getInstance().updateStateValue(props.id, "widgetInput", null)
   }
 
-  // Show the map-click or search-result point
-  const showFeaturePoint = (point: any) => {
-    if (!jimuMapView?.view?.stationary) return
-    if (!markerLayer || !point) return
+  const handleUnifiedGeometryInput = async (
+    input: UnifiedGeometryInput,
+  ): Promise<void> => {
+    if (!jimuMapView?.view) return
 
-    markerLayer.removeAll()
-    const pinGraphic = new Graphic({
-      geometry: point,
-      symbol: new PictureMarkerSymbol({
-        url: "https://static.arcgis.com/images/Symbols/Shapes/RedPin1LargeB.png",
-        width: "40px",
-        height: "40px",
-        yoffset: "15px",
-      }),
-    })
-    markerLayer.add(pinGraphic)
-  }
-
-  // Show the polygon used for spatial queries
-  const showSearchPolygon = (polygon: any) => {
-    if (!markerLayer || !polygon) return
-
-    markerLayer.removeAll()
-    const polygonGraphic = new Graphic({
-      geometry: polygon,
-      symbol: {
-        type: "simple-fill",
-        color: [0, 0, 0, 0],
-        outline: {
-          color: [56, 56, 56, 1],
-          width: 3,
-        },
-      } as any,
-    })
-    markerLayer.add(polygonGraphic)
-  }
-
-  // Create a slightly smaller polygon for spatial queries
-  const createInwardBuffer = (polygon: any) => {
-    try {
-      const bufferedPolygon = bufferOperator.execute(
-        polygon,
-        -0.1,
-        { unit: "feet" },
-      )
-
-      if (!bufferedPolygon || bufferedPolygon.isEmpty) {
-        console.warn("Inward buffer produced an empty polygon")
-        return null
-      }
-
-      return bufferedPolygon
-    } catch (error) {
-      console.error("Inward buffer error:", error)
-      return null
-    }
-  }
-
-  // Retrieve popup-enabled features at a screen point or rectangle
-  const fetchPopupFeatures = async (
-    mapComponent: any,
-    hitTarget: any,
-    pointerType: any = "mouse",
-  ) => {
-    if (!mapComponent || !hitTarget) return
+    const requestId = ++requestSequenceRef.current
+    activeInputRef.current = { sourceId: input.sourceId, requestId }
 
     try {
-      const graphicGenerator = await mapComponent.fetchPopupFeatures(
-        hitTarget,
-        { pointerType },
-      )
-      const graphics: any[] = []
+      const { graphics, queryGeometries } = await processFeatureInput(input, jimuMapView)
+      if (activeInputRef.current?.requestId !== requestId) return
 
-      for await (const graphic of graphicGenerator) {
-        graphics.push(graphic)
+      // Map Click draws its own marker before retrieval.
+      // All external geometry selections display the geometries used to query.
+      if (input.retrievalMethod === "spatial") {
+        showInputGeometries(markerLayer, queryGeometries)
       }
-
       updateFeatureResults(graphics)
     } catch (error) {
-      console.error("Fetch popup features error:", error)
+      if (activeInputRef.current?.requestId === requestId) {
+        console.error("Unified geometry input error:", error)
+      }
     }
   }
 
-  // Query popup-enabled features intersecting a buffered polygon
-  const fetchPolygonFeatures = async (bufferedPolygon: any) => {
-    if (!jimuMapView?.view || !bufferedPolygon) return
-
-    const view = jimuMapView.view
-
-    // Check visibility, including parent layers
-    const isVisible = (layer: any) => {
-      let current = layer
-      while (current) {
-        if (current.visible === false) return false
-        current = current.parent
-      }
-      return true
-    }
-    const queryLayers: any[] = []
-
-    // Collect popup-enabled Feature Layers and Map Image sublayers
-    for (const layer of view.map.allLayers.toArray()) {
-      if (!isVisible(layer)) continue
-      if (layer.type === "feature") {
-        if (layer.popupEnabled && layer.popupTemplate) {
-          queryLayers.push(layer)
-        }
-      }
-      if (layer.type === "map-image") {
-        try {
-          await layer.load()
-          layer.allSublayers.forEach((sublayer: any) => {
-            if (
-              isVisible(sublayer) &&
-              (sublayer.sublayers?.length ?? 0) === 0 &&
-              sublayer.popupEnabled &&
-              sublayer.popupTemplate
-            ) {
-              queryLayers.push(sublayer)
-            }
-          })
-        } catch (error) {
-          console.error("Map Image Layer load error:", error)
-        }
-      }
-    }
-    console.log("Polygon query layers:", queryLayers.length)
-
-    // Query each layer independently
-    const results = await Promise.all(
-      queryLayers.map(async (layer) => {
-        try {
-          const query = layer.createQuery()
-          query.geometry = bufferedPolygon
-          query.spatialRelationship = "intersects"
-          query.outFields = ["*"]
-          query.returnGeometry = true
-          const featureSet = await layer.queryFeatures(query)
-          return featureSet.features.map((graphic: any) => {
-            // Preserve the original WebMap layer and popup configuration
-            graphic.layer = layer
-            graphic.popupTemplate = layer.popupTemplate
-            return graphic
-          })
-        } catch (error) {
-          console.error(`Polygon query error: ${layer.title}`, error)
-          return []
-        }
-      }),
-    )
-    const graphics = results.flat().reverse()
-
-    updateFeatureResults(graphics)
-    console.log("Polygon query features:", graphics.length)
-  }
-
-  // Handle active map view
   const activeViewChangeHandler = (jmv: JimuMapView) => {
     if (jmv) setJimuMapView(jmv)
   }
 
-  // Create marker and selection graphics layers
-  useEffect(() => {
-    if (!jimuMapView?.view) return
-
-    const view = jimuMapView.view
-    const marker = new GraphicsLayer({
-      id: "feature-info-multi-marker",
-      title: "Feature Marker",
-      listMode: "hide",
-    })
-    const selection = new GraphicsLayer({
-      id: "feature-info-multi-selection",
-      title: "Feature Selection",
-      listMode: "hide",
-    })
-    view.map.add(marker)
-    view.map.add(selection)
-
-    setMarkerLayer(marker)
-    setSelectionLayer(selection)
-
-    return () => {
-      view.map.remove(marker)
-      view.map.remove(selection)
-    }
-  }, [jimuMapView])
-
-  // Hide Experience Builder's default feature highlight
+  // Preserve the widget's custom feature-highlighting behavior.
   useEffect(() => {
     if (!jimuMapView?.view) return
     const defaultHighlight = jimuMapView.view.highlights.find(
@@ -253,10 +86,8 @@ const Widget = (props: AllWidgetProps<any>) => {
     }
   }, [jimuMapView])
 
-  // Select, zoom to, and highlight a feature
   const handleBlockClick = async (graphic: any) => {
-    if (!selectionEnabled) return
-    if (!jimuMapView?.view || !selectionLayer || !graphic?.geometry) return
+    if (!selectionEnabled || !jimuMapView?.view || !selectionLayer || !graphic?.geometry) return
 
     if (selectedGraphic === graphic) {
       selectionLayer.removeAll()
@@ -267,242 +98,56 @@ const Widget = (props: AllWidgetProps<any>) => {
     try {
       selectionLayer.removeAll()
       await jimuMapView.view.goTo(graphic.geometry)
-
-      const selectionGraphic = new Graphic({
-        geometry: graphic.geometry,
-      })
-
-      if (graphic.geometry.type === "polygon") {
-        selectionGraphic.symbol = {
-          type: "simple-fill",
-          color: [0, 255, 255, 0.15],
-          outline: {
-            color: [0, 255, 255, 1],
-            width: 2,
-          },
-        } as any
-      }
-
-      if (graphic.geometry.type === "polyline") {
-        selectionGraphic.symbol = {
-          type: "simple-line",
-          color: [0, 255, 255, 1],
-          width: 4,
-        } as any
-      }
-
-      if (graphic.geometry.type === "point") {
-        selectionGraphic.symbol = {
-          type: "simple-marker",
-          color: [0, 255, 255, 0.35],
-          size: 16,
-          outline: {
-            color: [0, 255, 255, 1],
-            width: 2,
-          },
-        } as any
-      }
-
-      selectionLayer.add(selectionGraphic)
+      highlightFeature(selectionLayer, graphic.geometry)
       setSelectedGraphic(graphic)
     } catch (error) {
       console.error("Zoom / selection error:", error)
     }
   }
 
-  // Clear results, location graphic, feature highlight, and Search state
   const clearFeatureResults = () => {
-    setPopupFeatures([])
-    setSelectedGraphic(null)
-
-    selectionLayer?.removeAll()
+    ++requestSequenceRef.current
+    activeInputRef.current = null
+    updateFeatureResults([])
     markerLayer?.removeAll()
-
-    resetSearchState()
+    resetMessageInput()
   }
 
-  // Enable or disable feature selection
   const toggleSelection = () => {
     if (selectionEnabled) {
       selectionLayer?.removeAll()
       setSelectedGraphic(null)
-      setSelectionEnabled(false)
-    } else {
-      setSelectionEnabled(true)
     }
+    setSelectionEnabled(!selectionEnabled)
   }
 
-  // Fetch popup features from map clicks
+  // Map clicks use the hit rectangle to retrieve overlapping popup features.
+  useMapClick(jimuMapView, markerLayer, resetMessageInput, handleUnifiedGeometryInput)
+
+  // Every compatible widget publishes the same selection/clear message payload.
   useEffect(() => {
-    if (!jimuMapView?.view) return
+    if (!messageInput) return
 
-    const view = jimuMapView.view
-
-    const handle = view.on("click", async (event: any) => {
-      if (!view.stationary) return
-
-      showFeaturePoint(event.mapPoint)
-      resetSearchState()
-
-      const mapComponent = jimuMapView.mapComponent
-      if (!mapComponent) return
-      const CLICK_BUFFER = 8
-      const hitTarget = {
-        x: event.screenPoint.x - CLICK_BUFFER,
-        y: event.screenPoint.y - CLICK_BUFFER,
-        width: CLICK_BUFFER * 2,
-        height: CLICK_BUFFER * 2,
-      }
-
-      await fetchPopupFeatures(
-        mapComponent,
-        hitTarget,
-        event.pointerType,
-      )
-    })
-
-    return () => {
-      handle.remove()
-    }
-  }, [jimuMapView, markerLayer])
-
-  // Fetch features from Search widget results
-  useEffect(() => {
-    if (!jimuMapView?.view || !searchPoint || !markerLayer) return
-
-    const fetchFeaturesFromSearch = async () => {
-      const view = jimuMapView.view
-      const mapComponent = jimuMapView.mapComponent
-      if (!mapComponent) return
-
-      try {
-        const usePolygon =
-          polygonSearchMethod === "inward-buffer" && searchPolygon
-        if (usePolygon) {
-          // Create the polygon used for querying
-          const bufferedPolygon = createInwardBuffer(searchPolygon)
-          if (!bufferedPolygon) return
-
-          // Zoom to the polygon
-          await view.goTo(bufferedPolygon.extent.expand(1.5))
-          // Display the polygon instead of the map pin
-          showSearchPolygon(bufferedPolygon)
-          // Query features within the buffered polygon
-          await fetchPolygonFeatures(bufferedPolygon)
-        } else {
-
-          await view.goTo({
-            center: searchPoint,
-            zoom: 18,
-          })
-          await reactiveUtils.whenOnce(
-            () => view.stationary && !view.updating,
-          )
-          showFeaturePoint(searchPoint)
-
-          const screenPoint = view.toScreen(searchPoint)
-          if (!screenPoint) return
-          await fetchPopupFeatures(
-            mapComponent,
-            screenPoint,
-            "mouse",
-          )
-        }
-      } catch (error) {
-        console.error("Search zoom / fetch error:", error)
-      }
-    }
-
-    fetchFeaturesFromSearch()
-  }, [
-    jimuMapView,
-    markerLayer,
-    searchPoint,
-    searchPolygon,
-    polygonSearchMethod,
-  ])
-
-  // Group popup features by their highest-level layer or group
-  const groupPopupFeatures = (graphics: any[]) => {
-    const groups: { [key: string]: any[] } = {}
-
-    graphics.forEach((graphic) => {
-      const leafLayer = graphic.sourceLayer || graphic.layer
-      if (!leafLayer) return
-      let topLayer = leafLayer
-      while (topLayer.parent?.title) {
-        topLayer = topLayer.parent
-      }
-      const groupTitle =
-        topLayer.title || leafLayer.title || "Other"
-      if (!groups[groupTitle]) {
-        groups[groupTitle] = []
-      }
-      groups[groupTitle].push(graphic)
-    })
-    return groups
-  }
-  const groupedPopupFeatures = groupPopupFeatures(popupFeatures)
-
-  // Check whether all sections are expanded
-  const allSectionsExpanded = Object.keys(groupedPopupFeatures).every(
-    (title) => expandedSections[title] ?? true,
-  )
-
-  // Expand or collapse all sections
-  const toggleAllSections = () => {
-    const groupTitles = Object.keys(groupedPopupFeatures)
-    const nextState: { [key: string]: boolean } = {}
-
-    groupTitles.forEach((title) => {
-      nextState[title] = !allSectionsExpanded
-    })
-    setExpandedSections(nextState)
-  }
-
-  // Add horizontal padding to section headers
-  const styleSectionHeader = async (section: any) => {
-    if (!section) return
-
-    await section.componentOnReady()
-
-    const shadowRoot = section.shadowRoot
-    if (!shadowRoot || shadowRoot.querySelector("#section-header-style")) {
+    if (messageInput.kind === "clear") {
+      // A source can only clear its own currently displayed results.
+      if (activeInputRef.current?.sourceId !== messageInput.sourceId) return
+      ++requestSequenceRef.current
+      activeInputRef.current = null
+      markerLayer?.removeAll()
+      updateFeatureResults([])
       return
     }
 
-    const style = document.createElement("style")
-    style.id = "section-header-style"
-    style.textContent = `
-      .toggle {
-        padding-inline: 12px !important;
-      }
-    `
+    if (!jimuMapView?.view || !messageInput.geometries.length) return
 
-    shadowRoot.appendChild(style)
-  }
+    void handleUnifiedGeometryInput({
+      origin: "widget",
+      sourceId: messageInput.sourceId,
+      geometries: messageInput.geometries,
+      retrievalMethod: "spatial",
+    })
+  }, [jimuMapView?.view, markerLayer, messageInput])
 
-  // Update an individual section's expansion state
-  const updateSectionExpansion = (
-    groupTitle: string,
-    expanded: boolean,
-  ) => {
-    setExpandedSections((previous) => ({
-      ...previous,
-      [groupTitle]: expanded,
-    }))
-  }
-
-  // Panel action labels
-  const toggleAllLabel = allSectionsExpanded
-    ? "Collapse all sections"
-    : "Expand all sections"
-
-  const selectionLabel = selectionEnabled
-    ? "Clear all highlights and disable selection"
-    : "Enable selection"
-
-  // UI
   return (
     <div className="jimu-widget">
       {props.useMapWidgetIds?.length === 1 && (
@@ -512,191 +157,14 @@ const Widget = (props: AllWidgetProps<any>) => {
         />
       )}
       {jimuMapView?.view && (
-        <calcite-panel
-          heading="Feature Information"
-          style={
-            {
-              "--calcite-panel-background-color": "#ffffff",
-            } as React.CSSProperties
-          }
-        >
-          {popupFeatures.length > 0 && (
-            <>
-              <span slot="description" style={{ fontSize: "12px" }}>
-                Number of Features Found: {popupFeatures.length}
-              </span>
-              <div
-                slot="header-actions-end"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "2px",
-                }}
-              >
-                {/* Expand or collapse all sections */}
-                <calcite-action
-                  id="toggle-all-sections"
-                  icon={
-                    allSectionsExpanded
-                      ? "chevrons-up"
-                      : "chevrons-down"
-                  }
-                  text={toggleAllLabel}
-                  style={
-                    {
-                      "--calcite-color-focus": "transparent",
-                    } as React.CSSProperties
-                  }
-                  onClick={toggleAllSections}
-                />
-                <calcite-tooltip
-                  close-on-click
-                  reference-element="toggle-all-sections"
-                  placement="bottom"
-                >
-                  {toggleAllLabel}
-                </calcite-tooltip>
-                {/* Toggle feature selection */}
-                <calcite-action
-                  id="selection-action-switch"
-                  icon="enable-disable-feature-selection"
-                  text={selectionLabel}
-                  style={
-                    {
-                      "--calcite-color-focus": "transparent",
-                      "--calcite-action-background-color": selectionEnabled
-                        ? "#97d1bbe8"
-                        : "transparent",
-                    } as React.CSSProperties
-                  }
-                  onClick={toggleSelection}
-                />
-                <calcite-tooltip
-                  close-on-click
-                  reference-element="selection-action-switch"
-                  placement="bottom"
-                >
-                  {selectionLabel}
-                </calcite-tooltip>
-                {/* Clear feature results */}
-                <calcite-action
-                  id="clear-results-action"
-                  icon="trash"
-                  text="Delete all results"
-                  onClick={clearFeatureResults}
-                />
-                <calcite-tooltip
-                  close-on-click
-                  reference-element="clear-results-action"
-                  placement="bottom"
-                >
-                  Delete all results
-                </calcite-tooltip>
-              </div>
-            </>
-          )}
-          {/* Search location notice */}
-          {searchResultUsesInteriorPoint && (
-            <calcite-block
-              label="Search Location Notice"
-              expanded
-              style={
-                {
-                  backgroundColor: "transparent",
-                  "--calcite-block-border-color": "transparent",
-                } as React.CSSProperties
-              }
-            >
-              <calcite-notice
-                open
-                closable
-                kind="info"
-                icon="information"
-                scale="s"
-                style={
-                  {
-                    "--calcite-notice-corner-radius": "7px",
-                  } as React.CSSProperties
-                }
-              >
-                <div slot="title">Search Location</div>
-                <div slot="message">
-                  {polygonSearchMethod === "inward-buffer" && searchPolygon
-                    ? "The grey outline represents the area used to retrieve the results."
-                    : "The map pin marks the point used to retrieve the results."}
-                </div>
-              </calcite-notice>
-            </calcite-block>
-          )}
-          {/* Grouped feature results */}
-          {popupFeatures.length > 0 && (
-            <div>
-              {Object.entries(groupedPopupFeatures).map(
-                ([groupTitle, graphics]) => (
-                  <calcite-block-section
-                    key={groupTitle}
-                    ref={(section) => {
-                      if (section) {
-                        void styleSectionHeader(section)
-                      }
-                    }}
-                    text={groupTitle}
-                    expanded={expandedSections[groupTitle] ?? true}
-                    oncalciteBlockSectionExpand={() => {
-                      updateSectionExpansion(groupTitle, true)
-                    }}
-                    oncalciteBlockSectionCollapse={() => {
-                      updateSectionExpansion(groupTitle, false)
-                    }}
-                    style={
-                      {
-                        "--calcite-block-section-content-space": "0px",
-                        "--calcite-block-section-border-color": "transparent",
-                        "--calcite-color-focus": "transparent",
-                        "--calcite-block-section-background-color":
-                          "#dfdedead",
-                      } as React.CSSProperties
-                    }
-                  >
-                    {graphics.map((graphic, index) => {
-                      const leafTitle =
-                        graphic.sourceLayer?.title ||
-                        graphic.layer?.title ||
-                        "Feature"
-                      return (
-                        <calcite-block
-                          key={`${groupTitle}-${leafTitle}-${index}`}
-                          label={leafTitle}
-                          expanded
-                          style={
-                            {
-                              "--calcite-block-border-color": "transparent",
-                              "--calcite-block-content-space": "5px",
-                              backgroundColor:
-                                selectedGraphic === graphic
-                                  ? "#8baffd"
-                                  : "transparent",
-                              transition: "background-color 0s ease",
-                              cursor: selectionEnabled
-                                ? "pointer"
-                                : "default",
-                            } as React.CSSProperties
-                          }
-                          onClick={() => handleBlockClick(graphic)}
-                        >
-                          <arcgis-feature
-                            graphic={graphic}
-                            style={{ whiteSpace: "pre-wrap" }}
-                          ></arcgis-feature>
-                        </calcite-block>
-                      )
-                    })}
-                  </calcite-block-section>
-                ),
-              )}
-            </div>
-          )}
-        </calcite-panel>
+        <FeatureResultsPanel
+          popupFeatures={popupFeatures}
+          selectedGraphic={selectedGraphic}
+          selectionEnabled={selectionEnabled}
+          onFeatureClick={handleBlockClick}
+          onToggleSelection={toggleSelection}
+          onClearResults={clearFeatureResults}
+        />
       )}
     </div>
   )

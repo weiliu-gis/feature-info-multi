@@ -1,8 +1,5 @@
 import type { ImmutableObject } from "seamless-immutable"
 
-export interface Config {
-  useMapWidgetIds: string[]
-  polygonSearchMethod: "interior-point" | "inward-buffer"
-}
-
+// No widget-specific retrieval configuration is required.
+export interface Config {}
 export type IMConfig = ImmutableObject<Config>

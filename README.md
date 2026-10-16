@@ -1,101 +1,85 @@
-# Feature Info Multi
+# Advanced Feature Info
 
-**Feature Info Multi** is a custom widget for **ArcGIS Experience Builder Developer Edition 1.21**. It displays information for multiple features found through map clicks or Search widget results, organizes them by layer(group), and provides controls for navigating and highlighting features.
+**Advanced Feature Info** is a custom widget for **ArcGIS Experience Builder Developer Edition 1.21**. It displays popup information for multiple features identified through map clicks or selections from other Experience Builder widgets. Results are organized by layer, with controls for navigating and highlighting features.
 
-![Feature Info Multi Interface](https://private-user-images.githubusercontent.com/89955724/671381208-59aad9e0-6aae-4967-a2c5-d57ce32e8e00.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3OTE4MTM2MjgsIm5iZiI6MTc5MTgxMzMyOCwicGF0aCI6Ii84OTk1NTcyNC82NzEzODEyMDgtNTlhYWQ5ZTAtNmFhZS00OTY3LWEyYzUtZDU3Y2UzMmU4ZTAwLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjEwMTIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYxMDEyVDEzNTUyOFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWQxZWRjZTYxZDA5ZWFhMjBiOTAxYjNkODlmNmRmNjgzNzgzYzBmY2Y2MjY5ODFiMTE2M2I2ZjRjYmNkZDEyNzQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.icyHa7UTF92a94c0QZ6HytX3cT_ZT0D0ntLekVwyeyU)
+![Advanced Feature Info Interface](https://github.com/user-attachments/assets/59aad9e0-6aae-4967-a2c5-d57ce32e8e00)
 
-_Note: The screenshot is for demonstration purposes only. The widget's appearance and displayed information may vary depending on the application configuration and map data._
+_Note: The screenshot is for demonstration purposes only. Appearance and results depend on the application and map configuration._
 
 ## Features
 
-- **Identify multiple features:** Click the connected map to retrieve popup information from supported, visible, popup-enabled layers. A red pin marks the selected location.
-- **Search integration:** Use results from Search widget to find and display feature information at the selected location. For lines or polygons, options are provided to use an interior point or a inward-buffered (0.1 feet) polygon created from search results.
-
-  ![Polygon Search Method](https://private-user-images.githubusercontent.com/89955724/671383608-0050a9a8-c06c-4349-8f4a-3e25633747d1.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3OTE4MTM2MjgsIm5iZiI6MTc5MTgxMzMyOCwicGF0aCI6Ii84OTk1NTcyNC82NzEzODM2MDgtMDA1MGE5YTgtYzA2Yy00MzQ5LThmNGEtM2UyNTYzMzc0N2QxLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjEwMTIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYxMDEyVDEzNTUyOFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTQ1NzVkYzQ2ZjY3YjE2NzExNTY0ZTc5NWI0MWVkNmI5ZjU4ZDZkOTc4MjMwZWFhMGM0NjQ2M2MzOWIwZDlhNjkmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.iPAWQFuVDW2Tm6pNEH_nuaaZowQuhDzZWFSl8S4JrdM)
-
-- **Grouped results:** Organizes features under their highest-level layer or group name, with individual feature details displayed in the blocks.
-- **Expand and collapse:** Open or close individual result groups, or use the panel action to expand or collapse all groups at once.
-- **Feature selection:** Enable selection to click a feature block, zoom to its geometry, and highlight it in cyan. Click the same block again to deselect it.
-- **Clear results:** Remove the displayed results, location pin, selection highlight, and search-location notice.
-
-The panel displays the number of returned features and shows its action buttons when results are available.
+- **Identify multiple features:** Click the connected map to retrieve popup information from visible, popup-enabled layers. A red pin marks the clicked location.
+- **Widget integration:** Retrieve intersecting features using selected geometries from **Search, Query, Table, List, Select**, and other compatible widgets through a single message action.
+- **Geometry handling:** Supports point, line, and polygon inputs, including point tolerance (when configured), inward polygon buffering, multiple selections, and duplicate removal.
+- **Grouped results:** Organizes features under their highest-level layer or group name.
+- **Expand and collapse:** Open or close individual groups or all groups at once.
+- **Feature selection:** Click a feature block to zoom to and highlight its geometry; click again to deselect.
+- **Clear results:** Remove displayed results and map graphics.
 
 ## Requirements
 
 - ArcGIS Experience Builder Developer Edition **1.21**.
-- An Experience Builder **Map** widget with a web map containing accessible, popup-enabled layers.
-- An Experience Builder **Search** widget if search-result integration is needed.
-
-The widget works with popup results returned by the connected Map widget, including results from supported Feature Layers and Map Image Layers.
+- A **Map** widget with an accessible web map and popup-enabled layers.
+- Optional source widgets that support **Record selection changes** and provide records with usable geometry.
 
 ## Installation
 
 1. Download or clone this repository.
-2. Place the `feature-info-multi` folder in your Experience Builder installation:
+2. Place the `feature-info-multi` folder in:
 
    ```text
    client/your-extensions/widgets/
    ```
 
-3. Start the Experience Builder Developer Edition server and client. If the client was already running when you added the widget, restart it.
-4. Open your experience and add **Feature Info Multi** from the custom widgets.
+3. Start or restart Experience Builder Developer Edition.
+4. Add **Advanced Feature Info** to your experience.
+
+_When upgrading, replace the existing widget folder cleanly so obsolete files are not retained._
 
 ## Widget settings
 
 ### Connect a Map widget (required)
 
-1. Add a **Map** widget to your experience and configure its web map.
-2. Select **Feature Info Multi** to open its settings.
+1. Add a **Map** widget and configure its web map.
+2. Open **Advanced Feature Info** settings.
 3. Under **Select a Map widget**, choose the Map widget to connect.
-4. Under **Polygon Search Method**, choose one polygon handling option for the results from search widget.
 
-Select **one** Map widget. Make sure the layers you want to identify are visible, accessible, and configured to display popups.
+### Connect other widgets (optional)
 
-### Connect a Search widget (optional)
-
-To display feature information when users select Search results:
-
-1. Add and configure a **Search** widget.
-2. In the Search widget's settings, open **Action** and add a **Message action** trigger.
+1. Add and configure a compatible widget, such as **Search**, **Query**, or **Table**.
+2. In its settings, open **Action → Message action**.
 3. Choose **Record selection changes** as the trigger.
-4. Select **Feature Info Multi** as the target widget and **Search result** as the action.
-5. Save your settings.
+4. Select **Advanced Feature Info → Show Feature Information** as the action.
 
-The **Search result** action requires no additional configuration. Map-click identification works without this integration.
+Repeat for additional source widgets. No action-specific settings are required. Map-click identification works without message-action configuration.
 
 ## Using the widget
 
-| Control or interaction         | What it does                                                                 |
-| ------------------------------ | ---------------------------------------------------------------------------- |
-| Click the map                  | Shows popup information for features found near the clicked location.        |
-| Select a Search result         | Shows feature information at the selected point or polygon's interior point. |
-| Expand/Collapse All            | Opens or closes all result groups.                                           |
-| Block section heading          | Expands or collapses an individual group.                                    |
-| Enable selection               | Allows feature blocks to be clicked for zooming and highlighting.            |
-| Click a selected feature again | Removes its highlight.                                                       |
-| Disable selection              | Turns off feature-block selection and clears the current highlight.          |
-| Delete all results             | Clears the results, map pin, highlight, and search-location notice.          |
-
-The header controls appear when at least one feature is found. Selection is disabled by default.
+| Control or interaction                | What it does                                                      |
+| ------------------------------------- | ----------------------------------------------------------------- |
+| Click the map                         | Retrieves popup information near the clicked location.            |
+| Select a record in a connected widget | Retrieves features intersecting the selected geometry.            |
+| Expand/Collapse All                   | Opens or closes all result groups.                                |
+| Group heading                         | Expands or collapses an individual group.                         |
+| Enable selection                      | Allows feature blocks to be clicked for zooming and highlighting. |
+| Click a selected feature again        | Removes its highlight.                                            |
+| Delete all results                    | Clears results and related map graphics.                          |
 
 ## Notes and limitations
 
-- Results depend on the map's popup configuration, layer visibility, and service permissions.
-- Search results provide a location for retrieving popup information; the widget does not simply reproduce the original Search record.
-- Results are grouped by their highest-level layer **title**. Layers with identical top-level titles may share a group.
-- The widget temporarily hides the map view's default highlight by setting its fill color and border color to transparent.
-- Custom section-header spacing relies on Calcite's internal styling and should be checked after upgrading Experience Builder or Calcite.
+- Results depend on layer visibility, popup configuration, and service permissions.
+- **Map Click** uses a screen-based hit tolerance; external point selections use spatial intersection with any configured ground-distance tolerance.
+- Locator-based Search results may not coincide exactly with stored feature locations.
+- Results are grouped by the highest-level layer title; layers sharing that title may appear together.
+- The widget temporarily suppresses the map's default highlight. Custom Calcite styling may require review after upgrades.
 
 ## Deployment
 
-To test the widget in an application, publish and download the **entire** Experience Builder application. Extract it and copy the application files to your web server(folder). The custom widget is included in the downloaded experience.
-
-If your experience uses private ArcGIS content, register the deployed application and configure its client ID according to Esri's Experience Builder deployment instructions. Users still need permission to access secured maps and services.
+Publish and download the **entire Experience Builder application**, then deploy its files to your web server. The custom widget is included in the downloaded application. Private ArcGIS content may require application registration and appropriate user permissions.
 
 ## Documentation
 
 - [ArcGIS Experience Builder: Custom widget development](https://developers.arcgis.com/experience-builder/guide/getting-started-widget/)
 - [ArcGIS Experience Builder: Actions](https://developers.arcgis.com/experience-builder/guide/action-triggers/)
 - [ArcGIS Experience Builder: Deployment](https://developers.arcgis.com/experience-builder/guide/experience-deployment/)
-- [Calcite Design System](https://developers.arcgis.com/calcite-design-system/)
 - [ArcGIS Maps SDK for JavaScript](https://developers.arcgis.com/javascript/latest/)

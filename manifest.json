@@ -1,12 +1,12 @@
 {
-  "name": "feature-info-multi",
-  "label": "Feature Info Multi",
+  "name": "advanced-feature-info",
+  "label": "Advanced Feature Info",
   "type": "widget",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "exbVersion": "1.21.0",
-  "lastUpdated": "2026-09-22",
+  "lastUpdated": "2026-10-16",
   "author": "Wei Liu",
-  "description": "Displays information for multiple features returned from map clicks and search results.",
+  "description": "Shows popup information from map clicks and spatial intersections from a single message action shared by compatible Experience Builder widgets.",
   "copyright": "",
   "license": "",
   "dependency": ["jimu-arcgis"],
@@ -17,10 +17,9 @@
   },
   "messageActions": [
     {
-      "name": "search-result",
-      "label": "Search result",
-      "uri": "actions/search-result-action",
-      "settingUri": "actions/search-result-action-setting"
+      "name": "unified-selection",
+      "label": "Show Feature Information",
+      "uri": "actions/unified-selection-action"
     }
   ]
 }
